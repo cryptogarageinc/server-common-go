@@ -1,0 +1,48 @@
+version: 2.1
+
+tag_only: &tag_only
+  filters:
+    tags:
+      only: /.*/
+    branches:
+      ignore: /.*/
+
+workflows:
+  build-test:
+    jobs:
+      - build-test
+
+orbs:
+  go: circleci/go@1.1.1
+jobs:
+  build-test:
+    working_directory: ~/server-common-go
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - go-mods-{{ checksum "go.sum" }}-v1
+      - run:
+          name: Install
+          command: |
+            make setup
+      - save_cache:
+          key: go-mods-{{ checksum "go.sum" }}-v1
+          paths:
+            - /home/circleci/go/pkg/mod
+      - run:
+          name: Run unit-tests
+          command: |
+            mkdir -p ../reports && mkdir -p ../coverage
+            gotestsum --junitfile ../reports/unit_test_report.xml \
+            -- -coverprofile=../coverage/coverage.out ./...
+      - run:
+          name: Build examples
+          command: make build-examples
+      - store_artifacts:
+          path: ../coverage
+          destination: raw-test-output
+      - store_test_results:
+          path: ../reports/

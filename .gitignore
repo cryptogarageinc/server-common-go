@@ -1,0 +1,29 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Generated ssl certificates (for testing)
+certs
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Vim tmp files
+*.swp
+
+# Binaries folder
+*bin
+
+# MAC
+*.DS_Store
+
+# Vendor folder
+*vendor/
+
+*.vscode
