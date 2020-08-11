@@ -1,0 +1,16 @@
+server:
+  address: 0.0.0.0:8080
+log:
+  dir: _log
+  output_stdout: true
+  basename: unittest.log.%Y-%m-%d
+  rotation_interval: PT24H
+  rotation_counts: 7
+  format: json
+  level: info
+database:
+  log: false
+  host: db
+  port: 5432
+  dbuser: postgres
+  dbname: db
