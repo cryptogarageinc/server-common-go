@@ -4,11 +4,12 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"github.com/cryptogarageinc/server-common-go/pkg/utils/iso8601"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/cryptogarageinc/server-common-go/pkg/utils/iso8601"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -209,6 +210,21 @@ func TestConfiguration_WithEnvironmentVariable_ReturnsEnvironmentVariableValue(t
 	assert := assert.New(t)
 	// Act
 	actual := config.GetInt("port")
+	// Assert
+	assert.Equal(expected, actual)
+}
+
+func TestSubConfiguration_WithEnvironmentVariable_ReturnsEnvironmentVariableValue(t *testing.T) {
+	// Arrange
+	expected := 100
+	os.Setenv("CORE_SUB_PORT", strconv.Itoa(expected))
+
+	config := createConfiguration(t)
+	assert := assert.New(t)
+
+	// Act
+	subConfig := config.Sub("sub")
+	actual := subConfig.GetInt("port")
 	// Assert
 	assert.Equal(expected, actual)
 }
