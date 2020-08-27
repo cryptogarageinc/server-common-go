@@ -232,6 +232,21 @@ func (c *Configuration) GetStringMap(key string, vType reflect.Type) (interface{
 	return res.Interface(), nil
 }
 
+// GetStruct returns the initialized struct sub configuration value associated
+// with the given key.
+func (c *Configuration) GetStruct(key string, vType reflect.Type) (interface{}, error) {
+	c.ensureInitialized()
+	if !c.viper.IsSet(key) {
+		return nil, errors.Errorf("GetStruct Error undefined key %s", key)
+	}
+	subConfig := c.Sub(key)
+	res := reflect.New(vType).Interface()
+	if err := subConfig.InitializeComponentConfig(res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 // GetFloat32 returns the values associated with the given key as a float32.
 func (c *Configuration) GetFloat32(key string) float32 {
 	c.ensureInitialized()
@@ -260,9 +275,12 @@ func (c *Configuration) GetTime(key string) (time.Time, error) {
 //	Hexbytes []byte        `configkey:"unittest.hexbyte,hex" validate:"required" default:"abcd0e"`
 //	Dr       time.Duration `configkey:"unittest.dr,duration,iso8601" validate:"required" default:"PT1H30M"`
 //	I64      int64         `configkey:"unittest.i64" validate:"min=11" default:"132904"`
-//	m        map[string]struct {
+//	M        map[string]struct {
 //		nestedString string `configkey:"ex_string" default:"example"`
 //	} `configkey:"unittest.nested_map"`
+//  Struct   struct {
+//		nestedString string `configkey:"ex_string" default:"example"`
+//	} `configkey:"unittest.nested_struct"`
 //}
 func (c *Configuration) InitializeComponentConfig(compConf interface{}) error {
 	c.ensureInitialized()
@@ -339,6 +357,12 @@ func (c *Configuration) InitializeComponentConfig(compConf interface{}) error {
 				return err
 			}
 			field.Set(reflect.ValueOf(value))
+		case reflect.Struct:
+			value, err := c.GetStruct(tag, field.Type())
+			if err != nil {
+				return err
+			}
+			field.Set(reflect.Indirect(reflect.ValueOf(value)))
 		default:
 			fieldType := field.Type()
 			switch fieldType {
