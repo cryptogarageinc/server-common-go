@@ -4,9 +4,10 @@ import (
 	"encoding/hex"
 	"io"
 	"reflect"
-	"github.com/cryptogarageinc/server-common-go/pkg/utils/iso8601"
 	"strings"
 	"time"
+
+	"github.com/cryptogarageinc/server-common-go/pkg/utils/iso8601"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -381,13 +382,22 @@ func (c *Configuration) InitializeComponentConfig(compConf interface{}) error {
 }
 
 // Sub returns a new initialized SubConfiguration
+// return nil if the tag is not present
 func (c *Configuration) Sub(tag string) *Configuration {
+	subViper := c.viper.Sub(tag)
+	if subViper == nil {
+		return nil
+	}
+	subAppName := c.AppName + "." + tag
+	subViper.SetEnvPrefix(subAppName)
+	subViper.AutomaticEnv()
+	subViper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	return &Configuration{
-		AppName:         c.AppName,
+		AppName:         subAppName,
 		EnvironmentName: c.EnvironmentName,
 
 		paths:       c.paths,
-		viper:       c.viper.Sub(tag),
+		viper:       subViper,
 		initialized: true,
 	}
 }
