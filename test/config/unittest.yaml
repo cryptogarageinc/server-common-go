@@ -40,4 +40,6 @@ unittest:
       value: true
     k2:
       value: false
+  nested_struct:
+    value: true
 

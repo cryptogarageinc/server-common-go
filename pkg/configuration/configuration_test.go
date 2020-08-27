@@ -201,6 +201,21 @@ func TestConfigurationGetStringMap_WithStringMap_ReturnsCorrectValue(t *testing.
 	assert.Equal(expected, actual)
 }
 
+func TestConfigurationGetStruct_WithNestedStruct_ReturnsCorrectValue(t *testing.T) {
+	// Arrange
+	config := createConfiguration(t)
+	assert := assert.New(t)
+	expected := &NestedTestConfig{
+		Value: true,
+	}
+	// Act
+	actual, err := config.GetStruct("unittest.nested_struct", reflect.TypeOf(NestedTestConfig{}))
+
+	// Assert
+	assert.NoError(err)
+	assert.Equal(expected, actual)
+}
+
 func TestConfiguration_WithEnvironmentVariable_ReturnsEnvironmentVariableValue(t *testing.T) {
 	// Arrange
 	expected := 100
@@ -248,22 +263,23 @@ type NestedTestConfig struct {
 }
 
 type UnitTestConfig struct {
-	I         int                         `configkey:"unittest.i" validate:"min=10" default:"10"`
-	S         string                      `configkey:"unittest.s" validate:"required" default:"hoge"`
-	Ss        []string                    `configkey:"unittest.ss" validate:"dive,required" default:"hoge,fuga"`
-	B         bool                        `configkey:"unittest.b" default:"true"`
-	Utf8byte  []byte                      `configkey:"unittest.utf8byte,utf8" validate:"required" default:"abcde"`
-	Utf8NoEnc []byte                      `configkey:"unittest.utf8byte" validate:"required" default:"abcde"`
-	Hexbytes  []byte                      `configkey:"unittest.hexbyte,hex" validate:"required" default:"abcd0e"`
-	Dr        time.Duration               `configkey:"unittest.dr,duration" validate:"required" default:"1h10m10s"`
-	I64       int64                       `configkey:"unittest.i64" validate:"min=11" default:"132904"`
-	UI8       uint8                       `configkey:"unittest.ui8" validate:"min=8" default:"8"`
-	UI32      uint32                      `configkey:"unittest.ui32" validate:"min=32" default:"32"`
-	UI64      uint64                      `configkey:"unittest.ui64" validate:"min=64" default:"64"`
-	F32       float32                     `configkey:"unittest.f32" validate:"min=3.2" default:"3.2"`
-	F64       float64                     `configkey:"unittest.f64" validate:"min=6.4" default:"6.4"`
-	StringMap map[string]NestedTestConfig `configkey:"unittest.string_map"`
-	Ignored   bool
+	I            int                         `configkey:"unittest.i" validate:"min=10" default:"10"`
+	S            string                      `configkey:"unittest.s" validate:"required" default:"hoge"`
+	Ss           []string                    `configkey:"unittest.ss" validate:"dive,required" default:"hoge,fuga"`
+	B            bool                        `configkey:"unittest.b" default:"true"`
+	Utf8byte     []byte                      `configkey:"unittest.utf8byte,utf8" validate:"required" default:"abcde"`
+	Utf8NoEnc    []byte                      `configkey:"unittest.utf8byte" validate:"required" default:"abcde"`
+	Hexbytes     []byte                      `configkey:"unittest.hexbyte,hex" validate:"required" default:"abcd0e"`
+	Dr           time.Duration               `configkey:"unittest.dr,duration" validate:"required" default:"1h10m10s"`
+	I64          int64                       `configkey:"unittest.i64" validate:"min=11" default:"132904"`
+	UI8          uint8                       `configkey:"unittest.ui8" validate:"min=8" default:"8"`
+	UI32         uint32                      `configkey:"unittest.ui32" validate:"min=32" default:"32"`
+	UI64         uint64                      `configkey:"unittest.ui64" validate:"min=64" default:"64"`
+	F32          float32                     `configkey:"unittest.f32" validate:"min=3.2" default:"3.2"`
+	F64          float64                     `configkey:"unittest.f64" validate:"min=6.4" default:"6.4"`
+	StringMap    map[string]NestedTestConfig `configkey:"unittest.string_map"`
+	NestedStruct NestedTestConfig            `configkey:"unittest.nested_struct"`
+	Ignored      bool
 }
 
 type InvalidTestConfig struct {
@@ -311,6 +327,9 @@ func TestConfiguration_InitializeComponentConfig_CorrectlyInitializesConfig(t *t
 		"k1": {Value: true},
 		"k2": {Value: false},
 	}, unitTestConfig.StringMap)
+	assert.Equal(NestedTestConfig{
+		Value: true,
+	}, unitTestConfig.NestedStruct)
 
 }
 
