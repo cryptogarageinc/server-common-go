@@ -24,7 +24,7 @@ func NewMigrator(orm *ORM, models ...interface{}) *Migrator {
 // Initialize performs the migrations for the models handled by the Migrator.
 func (m *Migrator) Initialize() error {
 	for _, model := range m.models {
-		if err := m.orm.GetDB().AutoMigrate(model).Error; err != nil {
+		if err := m.orm.GetDB().AutoMigrate(model); err != nil {
 			return errors.Errorf("migration failed for [%v]", model)
 		}
 	}

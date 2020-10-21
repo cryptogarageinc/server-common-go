@@ -1,21 +1,20 @@
 package orm
 
 import (
+	"database/sql"
 	"fmt"
+	"gorm.io/gorm/schema"
 	"time"
 
 	"reflect"
 	"unicode"
 
 	"github.com/cryptogarageinc/server-common-go/pkg/log"
-
-	"github.com/jinzhu/gorm"
-
-	// Drivers for postgres and sqlite
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 // NoLimit is used when searching without an upper limit on the number of
@@ -31,6 +30,7 @@ type ORM struct {
 	logger        *logrus.Logger
 	initialized   bool
 	db            *gorm.DB
+	sqldb *sql.DB
 }
 
 // NewORM creates a new ORM structure with the given parameters.
@@ -57,14 +57,14 @@ func (o *ORM) Initialize() error {
 	o.enableLog = enableLog
 	o.logger = o.log.Logger
 
-	var databaseType string
+	var dbDialector gorm.Dialector
 
 	if o.config.InMemory {
-		databaseType = "sqlite3"
-		o.connectionStr = ":memory:"
 		o.log.Logger.Info("InMemory flag detected : Using Sqlite Inmemory DB")
+		o.connectionStr = ":memory:"
+		dbDialector = sqlite.Open(o.connectionStr)
 	} else {
-		databaseType = "postgres"
+		// postgres db
 		o.connectionStr = fmt.Sprintf(
 			"host=%s port=%s dbname=%s user=%s password=%s %s",
 			o.config.Host,
@@ -73,19 +73,39 @@ func (o *ORM) Initialize() error {
 			o.config.DbUser,
 			o.config.DbPassword,
 			o.config.ConnectionParams)
+		dbDialector = postgres.Open(o.connectionStr)
 	}
 
-	opened, err := gorm.Open(databaseType, o.connectionStr)
+	opened, err := gorm.Open(dbDialector, &gorm.Config{
+		SkipDefaultTransaction:                   false,
+		NamingStrategy:                           nil,
+		FullSaveAssociations:                     false,
+		Logger:                                   nil,
+		NowFunc:                                  nil,
+		DryRun:                                   false,
+		PrepareStmt:                              false,
+		DisableAutomaticPing:                     false,
+		DisableForeignKeyConstraintWhenMigrating: false,
+		AllowGlobalUpdate:                        false,
+		ClauseBuilders:                           nil,
+		ConnPool:                                 nil,
+		Dialector:                                nil,
+		Plugins:                                  nil,
+	})
 	if err != nil {
 		o.log.Logger.Error(err, "Could not open database.")
 		return errors.Wrap(err, "failed to open database")
 	}
 
-	opened.SetLogger(o.logger)
-	opened.LogMode(o.enableLog)
-
 	o.db = opened
-	o.db.DB().SetConnMaxLifetime(time.Hour)
+	sqldb, err := o.db.DB()
+	if err != nil {
+		err = errors.WithMessage(err, "Could not access sub sql database.")
+		o.log.Logger.Error(err)
+		return err
+	}
+	o.sqldb = sqldb
+	o.sqldb.SetConnMaxLifetime(time.Hour)
 	o.initialized = true
 
 	return nil
@@ -98,7 +118,7 @@ func (o *ORM) IsInitialized() bool {
 
 // Finalize releases the resources held by the orm.
 func (o *ORM) Finalize() error {
-	err := o.db.Close()
+	err := o.sqldb.Close()
 	if err != nil {
 		return errors.Errorf("failed to close database connection")
 	}
@@ -116,41 +136,37 @@ func (o *ORM) GetDB() *gorm.DB {
 }
 
 // GetColumnNames returns the name of the columns for the given model.
-func GetColumnNames(model interface{}) []string {
+func (o *ORM) GetColumnNames(model interface{}) []string {
 	result := make([]string, 0)
 	t := reflect.TypeOf(model)
 	for i := 0; i < t.NumField(); i++ {
 		name := t.Field(i).Name
 		first := rune(name[0])
 		if unicode.IsUpper(first) {
-			result = append(result, gorm.TheNamingStrategy.ColumnName(name))
+			result = append(
+				result,
+				o.db.NamingStrategy.ColumnName("", name))
 		}
 	}
 	return result
 }
 
 // GetTableName returns the name of the table for the given model.
-// Assumes that the globalDB is initialized, returns the default table name
-// otherwise.
+// Assumes that the globalDB is initialized, returns empty string if not
 func (o *ORM) GetTableName(model interface{}) string {
 	if o.initialized {
-		return o.db.NewScope(model).GetModelStruct().TableName(o.db)
+		stmt := gorm.Statement{DB: o.db}
+		stmt.Parse(model)
+		return stmt.Schema.Table
 	}
-
-	v := reflect.ValueOf(model)
-	t := reflect.TypeOf(model)
-
-	for v.Kind() == reflect.Ptr {
-		v = reflect.Indirect(v)
-		t = v.Type()
-	}
-	return gorm.ToTableName(t.Name())
+	structName := reflect.TypeOf(model).Elem().Name()
+	return schema.NamingStrategy{}.TableName(structName)
 }
 
 // IsRecordNotFoundError returns whether the given error is due to a requested
 // record not present in the DB.
 func IsRecordNotFoundError(err error) bool {
-	return gorm.IsRecordNotFoundError(err)
+	return errors.Is(err, gorm.ErrRecordNotFound)
 }
 
 // NewRecordNotFoundError returns a ErrRecordNotFoundError.
