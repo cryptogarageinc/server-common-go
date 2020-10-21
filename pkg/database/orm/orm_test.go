@@ -22,10 +22,11 @@ func TestOrm_GetColumnNames(t *testing.T) {
 		unexposed    string
 		//Snake_Snake  string	// Don't use underscores in Go names
 	}
+	ormInstance := test.NewOrm(&TestStruct{})
 	expected := []string{"hoge", "fuga_fuga", "piyo_piyo_piyo"}
 
 	// Act
-	names := orm.GetColumnNames(TestStruct{unexposed: "unexposed"})
+	names := ormInstance.GetColumnNames(TestStruct{unexposed: "unexposed"})
 
 	// Assert
 	assert.Equal(expected, names)
@@ -52,7 +53,7 @@ func TestOrmGetTableName_Uninitialized_ReturnsCorrectName(t *testing.T) {
 	name := ormInstance.GetTableName(&TestModel{})
 
 	// Assert
-	assert.Equal("test_model", name)
+	assert.Equal("test_models", name)
 }
 
 func TestOrmInitializeFinalize_NoError(t *testing.T) {

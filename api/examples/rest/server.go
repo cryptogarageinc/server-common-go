@@ -197,7 +197,7 @@ func newInitializedRouter(log *log.Log, config *conf.Configuration) *router.Rout
 
 func doMigration(o *orm.ORM) error {
 	db := o.GetDB()
-	err := db.AutoMigrate().Error
+	err := db.AutoMigrate()
 
 	// do migrations and seeding
 	// ...
