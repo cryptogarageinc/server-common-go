@@ -1,34 +1,16 @@
 package orm_test
 
 import (
+	"testing"
+
 	"github.com/cryptogarageinc/server-common-go/pkg/database/orm"
 	"github.com/cryptogarageinc/server-common-go/test"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 type TestModel struct {
 	Name string
-}
-
-func TestOrm_GetColumnNames(t *testing.T) {
-	// Arrange
-	assert := assert.New(t)
-	type TestStruct struct {
-		Hoge         string
-		FugaFuga     string
-		PiyoPiyoPiyo string
-		unexposed    string
-		//Snake_Snake  string	// Don't use underscores in Go names
-	}
-	expected := []string{"hoge", "fuga_fuga", "piyo_piyo_piyo"}
-
-	// Act
-	names := orm.GetColumnNames(TestStruct{unexposed: "unexposed"})
-
-	// Assert
-	assert.Equal(expected, names)
 }
 
 func TestOrmGetTableName_Initialized_ReturnsCorrectName(t *testing.T) {
@@ -52,7 +34,7 @@ func TestOrmGetTableName_Uninitialized_ReturnsCorrectName(t *testing.T) {
 	name := ormInstance.GetTableName(&TestModel{})
 
 	// Assert
-	assert.Equal("test_model", name)
+	assert.Equal("test_models", name)
 }
 
 func TestOrmInitializeFinalize_NoError(t *testing.T) {
