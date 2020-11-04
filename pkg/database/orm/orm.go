@@ -3,11 +3,11 @@ package orm
 import (
 	"database/sql"
 	"fmt"
-	"gorm.io/gorm/schema"
 	"time"
 
+	"gorm.io/gorm/schema"
+
 	"reflect"
-	"unicode"
 
 	"github.com/cryptogarageinc/server-common-go/pkg/log"
 	"github.com/pkg/errors"
@@ -30,7 +30,7 @@ type ORM struct {
 	logger        *logrus.Logger
 	initialized   bool
 	db            *gorm.DB
-	sqldb *sql.DB
+	sqldb         *sql.DB
 }
 
 // NewORM creates a new ORM structure with the given parameters.
@@ -133,22 +133,6 @@ func (o *ORM) GetDB() *gorm.DB {
 	}
 
 	return o.db
-}
-
-// GetColumnNames returns the name of the columns for the given model.
-func (o *ORM) GetColumnNames(model interface{}) []string {
-	result := make([]string, 0)
-	t := reflect.TypeOf(model)
-	for i := 0; i < t.NumField(); i++ {
-		name := t.Field(i).Name
-		first := rune(name[0])
-		if unicode.IsUpper(first) {
-			result = append(
-				result,
-				o.db.NamingStrategy.ColumnName("", name))
-		}
-	}
-	return result
 }
 
 // GetTableName returns the name of the table for the given model.
