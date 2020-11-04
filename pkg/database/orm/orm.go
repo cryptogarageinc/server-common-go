@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
 
 	"reflect"
@@ -71,11 +72,28 @@ func (o *ORM) Initialize() error {
 		dbDialector = postgres.Open(o.connectionStr)
 	}
 
+	var level logger.LogLevel
+
+	switch o.log.Logger.GetLevel() {
+	case logrus.ErrorLevel:
+	case logrus.FatalLevel:
+	case logrus.PanicLevel:
+		level = logger.Error
+	case logrus.WarnLevel:
+		level = logger.Warn
+	default:
+		level = logger.Info
+	}
+
+	newLogger := logger.New(o.log.Logger, logger.Config{
+		LogLevel: level,
+	})
+
 	opened, err := gorm.Open(dbDialector, &gorm.Config{
 		SkipDefaultTransaction:                   false,
 		NamingStrategy:                           nil,
 		FullSaveAssociations:                     false,
-		Logger:                                   nil,
+		Logger:                                   newLogger,
 		NowFunc:                                  nil,
 		DryRun:                                   false,
 		PrepareStmt:                              false,
