@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm/schema"
 
 	"reflect"
-	"unicode"
 
 	"github.com/cryptogarageinc/server-common-go/pkg/log"
 	"github.com/pkg/errors"
@@ -129,22 +128,6 @@ func (o *ORM) GetDB() *gorm.DB {
 	}
 
 	return o.db
-}
-
-// GetColumnNames returns the name of the columns for the given model.
-func (o *ORM) GetColumnNames(model interface{}) []string {
-	result := make([]string, 0)
-	t := reflect.TypeOf(model)
-	for i := 0; i < t.NumField(); i++ {
-		name := t.Field(i).Name
-		first := rune(name[0])
-		if unicode.IsUpper(first) {
-			result = append(
-				result,
-				o.db.NamingStrategy.ColumnName("", name))
-		}
-	}
-	return result
 }
 
 // GetTableName returns the name of the table for the given model.
