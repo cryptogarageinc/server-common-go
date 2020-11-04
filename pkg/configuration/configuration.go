@@ -4,9 +4,10 @@ import (
 	"encoding/hex"
 	"io"
 	"reflect"
-	"github.com/cryptogarageinc/server-common-go/pkg/utils/iso8601"
 	"strings"
 	"time"
+
+	"github.com/cryptogarageinc/server-common-go/pkg/utils/iso8601"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -231,6 +232,21 @@ func (c *Configuration) GetStringMap(key string, vType reflect.Type) (interface{
 	return res.Interface(), nil
 }
 
+// GetStruct returns the initialized struct sub configuration value associated
+// with the given key.
+func (c *Configuration) GetStruct(key string, vType reflect.Type) (interface{}, error) {
+	c.ensureInitialized()
+	if !c.viper.IsSet(key) {
+		return nil, errors.Errorf("GetStruct Error undefined key %s", key)
+	}
+	subConfig := c.Sub(key)
+	res := reflect.New(vType).Interface()
+	if err := subConfig.InitializeComponentConfig(res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 // GetFloat32 returns the values associated with the given key as a float32.
 func (c *Configuration) GetFloat32(key string) float32 {
 	c.ensureInitialized()
@@ -259,9 +275,12 @@ func (c *Configuration) GetTime(key string) (time.Time, error) {
 //	Hexbytes []byte        `configkey:"unittest.hexbyte,hex" validate:"required" default:"abcd0e"`
 //	Dr       time.Duration `configkey:"unittest.dr,duration,iso8601" validate:"required" default:"PT1H30M"`
 //	I64      int64         `configkey:"unittest.i64" validate:"min=11" default:"132904"`
-//	m        map[string]struct {
+//	M        map[string]struct {
 //		nestedString string `configkey:"ex_string" default:"example"`
 //	} `configkey:"unittest.nested_map"`
+//  Struct   struct {
+//		nestedString string `configkey:"ex_string" default:"example"`
+//	} `configkey:"unittest.nested_struct"`
 //}
 func (c *Configuration) InitializeComponentConfig(compConf interface{}) error {
 	c.ensureInitialized()
@@ -338,6 +357,12 @@ func (c *Configuration) InitializeComponentConfig(compConf interface{}) error {
 				return err
 			}
 			field.Set(reflect.ValueOf(value))
+		case reflect.Struct:
+			value, err := c.GetStruct(tag, field.Type())
+			if err != nil {
+				return err
+			}
+			field.Set(reflect.Indirect(reflect.ValueOf(value)))
 		default:
 			fieldType := field.Type()
 			switch fieldType {
@@ -381,13 +406,22 @@ func (c *Configuration) InitializeComponentConfig(compConf interface{}) error {
 }
 
 // Sub returns a new initialized SubConfiguration
+// return nil if the tag is not present
 func (c *Configuration) Sub(tag string) *Configuration {
+	subViper := c.viper.Sub(tag)
+	if subViper == nil {
+		return nil
+	}
+	subAppName := c.AppName + "." + tag
+	subViper.SetEnvPrefix(subAppName)
+	subViper.AutomaticEnv()
+	subViper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	return &Configuration{
-		AppName:         c.AppName,
+		AppName:         subAppName,
 		EnvironmentName: c.EnvironmentName,
 
 		paths:       c.paths,
-		viper:       c.viper.Sub(tag),
+		viper:       subViper,
 		initialized: true,
 	}
 }
