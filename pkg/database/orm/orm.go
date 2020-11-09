@@ -72,39 +72,30 @@ func (o *ORM) Initialize() error {
 		dbDialector = postgres.Open(o.connectionStr)
 	}
 
-	var level logger.LogLevel
+	var newLogger logger.Interface
 
-	switch o.log.Logger.GetLevel() {
-	case logrus.ErrorLevel:
-	case logrus.FatalLevel:
-	case logrus.PanicLevel:
-		level = logger.Error
-	case logrus.WarnLevel:
-		level = logger.Warn
-	default:
-		level = logger.Info
+	if o.enableLog {
+		var level logger.LogLevel
+		switch o.log.Logger.GetLevel() {
+		case logrus.ErrorLevel:
+		case logrus.FatalLevel:
+		case logrus.PanicLevel:
+			level = logger.Error
+		case logrus.WarnLevel:
+			level = logger.Warn
+		default:
+			level = logger.Info
+		}
+
+		newLogger = logger.New(o.log.Logger, logger.Config{
+			LogLevel: level,
+		})
 	}
 
-	newLogger := logger.New(o.log.Logger, logger.Config{
-		LogLevel: level,
+	opened, err := gorm.Open(dbDialector, &gorm.Config{
+		Logger: newLogger,
 	})
 
-	opened, err := gorm.Open(dbDialector, &gorm.Config{
-		SkipDefaultTransaction:                   false,
-		NamingStrategy:                           nil,
-		FullSaveAssociations:                     false,
-		Logger:                                   newLogger,
-		NowFunc:                                  nil,
-		DryRun:                                   false,
-		PrepareStmt:                              false,
-		DisableAutomaticPing:                     false,
-		DisableForeignKeyConstraintWhenMigrating: false,
-		AllowGlobalUpdate:                        false,
-		ClauseBuilders:                           nil,
-		ConnPool:                                 nil,
-		Dialector:                                nil,
-		Plugins:                                  nil,
-	})
 	if err != nil {
 		o.log.Logger.Error(err, "Could not open database.")
 		return errors.Wrap(err, "failed to open database")

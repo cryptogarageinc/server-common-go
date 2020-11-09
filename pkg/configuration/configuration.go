@@ -358,7 +358,14 @@ func (c *Configuration) InitializeComponentConfig(compConf interface{}) error {
 			}
 			field.Set(reflect.ValueOf(value))
 		case reflect.Struct:
-			value, err := c.GetStruct(tag, field.Type())
+			fType := field.Type()
+			var value interface{}
+			var err error
+			if fType == timeType {
+				value, err = c.GetTime(tag)
+			} else {
+				value, err = c.GetStruct(tag, fType)
+			}
 			if err != nil {
 				return err
 			}
@@ -366,12 +373,6 @@ func (c *Configuration) InitializeComponentConfig(compConf interface{}) error {
 		default:
 			fieldType := field.Type()
 			switch fieldType {
-			case timeType:
-				value, err := c.GetTime(tag)
-				if err != nil {
-					return err
-				}
-				field.Set(reflect.ValueOf(value))
 			case stringSliceType:
 				value := c.GetStringSlice(tag)
 				field.Set(reflect.ValueOf(value))

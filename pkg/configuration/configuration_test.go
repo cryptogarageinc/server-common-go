@@ -158,6 +158,20 @@ func TestConfigurationGetDuration_WithDurationISO8601_ReturnsCorrectValue(t *tes
 	assert.Equal(expected, actual)
 }
 
+func TestConfigurationGetTime_WithTimeISO8601_ReturnsCorrectValue(t *testing.T) {
+	// Arrange
+	config := createConfiguration(t)
+	assert := assert.New(t)
+	expected, _ := time.ParseInLocation(time.RFC3339, "2020-01-01T00:00:00Z", time.UTC)
+
+	// Act
+	actual, err := config.GetTime("unittest.time")
+
+	// Assert
+	assert.NoError(err)
+	assert.Equal(expected, actual)
+}
+
 func TestConfigurationGetDuration_WithUInt32_ReturnsCorrectValue(t *testing.T) {
 	// Arrange
 	config := createConfiguration(t)
@@ -289,6 +303,7 @@ type UnitTestConfig struct {
 	Utf8NoEnc    []byte                      `configkey:"unittest.utf8byte" validate:"required" default:"abcde"`
 	Hexbytes     []byte                      `configkey:"unittest.hexbyte,hex" validate:"required" default:"abcd0e"`
 	Dr           time.Duration               `configkey:"unittest.dr,duration" validate:"required" default:"1h10m10s"`
+	Time         time.Time                   `configkey:"unittest.time" validate:"required" default:"2020-01-01T00:00:00Z"`
 	I64          int64                       `configkey:"unittest.i64" validate:"min=11" default:"132904"`
 	UI8          uint8                       `configkey:"unittest.ui8" validate:"min=8" default:"8"`
 	UI32         uint32                      `configkey:"unittest.ui32" validate:"min=32" default:"32"`
