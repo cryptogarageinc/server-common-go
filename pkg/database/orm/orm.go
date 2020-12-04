@@ -73,9 +73,9 @@ func (o *ORM) Initialize() error {
 	}
 
 	var newLogger logger.Interface
+	var level logger.LogLevel
 
 	if o.enableLog {
-		var level logger.LogLevel
 		switch o.log.Logger.GetLevel() {
 		case logrus.ErrorLevel:
 		case logrus.FatalLevel:
@@ -86,11 +86,13 @@ func (o *ORM) Initialize() error {
 		default:
 			level = logger.Info
 		}
-
-		newLogger = logger.New(o.log.Logger, logger.Config{
-			LogLevel: level,
-		})
+	} else {
+		level = logger.Silent
 	}
+
+	newLogger = logger.New(o.log.Logger, logger.Config{
+		LogLevel: level,
+	})
 
 	opened, err := gorm.Open(dbDialector, &gorm.Config{
 		Logger: newLogger,
