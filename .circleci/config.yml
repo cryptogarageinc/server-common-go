@@ -18,7 +18,7 @@ jobs:
   build-test:
     working_directory: ~/server-common-go
     docker:
-      - image: cimg/go:1.14
+      - image: cimg/go:1.16.6
     steps:
       - checkout
       - restore_cache:
